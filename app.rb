@@ -8,6 +8,8 @@ require 'app'
 require 'db'
 require 'customer'
 
+Customer.find_or_create(name: "bob", last_name: "marley", address: "jamaika", balance: 1000)
+
 class App < Sinatra::Base
 
   get '/' do
@@ -23,34 +25,72 @@ class App < Sinatra::Base
     {ok: "yes"}.to_json
   end
 
-  put '/customer/:name' do
+  post '/customer/:name' do |name|
     content_type :json
-    Customer.create(name: params[:name], last_name: params[:last_name], address: params[:address])
-    status 200
-    "customer created".to_json
+    Customer.create(name: name, last_name: payload['last_name'], address: payload['address'])
+    info("customer created")
   rescue Sequel::UniqueConstraintViolation => e
-    puts e.message
+    puts e.info
     status 409
-    "already exists"
+    error("already exists")
   end
 
-  get '/customer/:name' do
+  get '/customer/:name' do |name|
     content_type :json
-    Customer.find(name: params[:name]).to_json
     status 200
+    Customer.find(name: name).to_json
   rescue
     status 404
-    "customer not found"
+    error("customer not found")
   end
 
-  delete '/customer/:name' do
+  delete '/customer/:name' do |name|
     content_type :json
-    Customer.find(name: params[:name]).destroy
+    Customer.find(name: name).destroy
     status 200
-    "customer deleted".to_json
+    info("customer deleted")
   rescue
     status 404
-    "customer not found"
+    error("customer not found")
+  end
+
+  post '/customer/:sender/transaction/:receiver' do |sender, receiver|
+    content_type :json
+    sender = Customer.find(name: sender)
+    receiver = Customer.find(name: receiver)
+    halt 404, error("sender not found") if sender.nil?
+    halt 404, error("receiver not found") if receiver.nil?
+    amount = payload['amount'].to_i
+    if(sender.balance >= amount)
+      sender.update(balance: sender.balance - amount)
+      receiver.update(balance: receiver.balance + amount)
+      info('transaction processed')
+      status 200
+    else
+      status 422
+      error("Not enough balance")
+    end
+  rescue
+    status 404
+    error("customer not found")
+  end
+
+  def error(msg)
+    message(:error, msg)
+  end
+
+  def info(msg)
+    message(:info, msg)
+  end
+
+  def message(key, msg)
+    { key => msg }.to_json
+  end
+
+  def payload
+    @payload ||= JSON.parse(request.body.read)
+    puts @payload
+    @payload
   end
 end
 

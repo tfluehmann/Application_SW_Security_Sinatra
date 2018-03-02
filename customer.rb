@@ -3,6 +3,7 @@ class Customer < Sequel::Model
     {
       name: name,
       last_name: last_name,
+      balance: balance,
       address: address
     }
   end
