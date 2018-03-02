@@ -71,8 +71,7 @@ class App < Sinatra::Base
       error("Not enough balance")
     end
   rescue
-    status 404
-    error("customer not found")
+    status 400
   end
 
   def error(msg)
