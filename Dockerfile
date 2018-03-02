@@ -15,7 +15,6 @@ ADD Gemfile Gemfile.lock ${HOME}/
 RUN bundle install --jobs 4
 
 ADD . ${HOME}/
-ENV PORT 3000
-EXPOSE 3000
+EXPOSE 4567
 
-CMD ruby app.rb
+CMD ["bundle", "exec", "rackup", "config.ru", "-p", "4567", "-s", "puma", "-o", "0.0.0.0"]
