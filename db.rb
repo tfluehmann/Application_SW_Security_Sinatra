@@ -8,7 +8,6 @@ migration "create the foos table" do
     text        :name
     text        :last_name
     text        :address
-    timestamp   :bizzle, null: false
 
     index :name, unique: true
   end
