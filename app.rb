@@ -34,9 +34,18 @@ class App < Sinatra::Base
     "already exists"
   end
 
+  get '/customer/:name' do
+    content_type :json
+    Customer.find(name: params[:name]).to_json
+    status 200
+  rescue
+    status 404
+    "customer not found"
+  end
+
   delete '/customer/:name' do
     content_type :json
-    Customer.where(name: params[:name]).first.destroy
+    Customer.find(name: params[:name]).destroy
     status 200
     "customer deleted".to_json
   rescue
