@@ -1,4 +1,4 @@
-FROM ruby:2.4.2
+FROM ruby:2.5.0
 
 ENV ENVIED_ENABLE_DEFAULTS=true
 
