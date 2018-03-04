@@ -51,3 +51,10 @@ build-iPhoneSimulator/
 
 # Sequel
 *.db
+
+# Certs
+*.crt
+*.key
+*.log
+*.pem
+*.req
