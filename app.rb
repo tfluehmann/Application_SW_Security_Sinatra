@@ -8,9 +8,30 @@ require 'app'
 require 'db'
 require 'customer'
 
-Customer.find_or_create(name: "bob", last_name: "marley", address: "jamaika", balance: 1000)
+Customer.find_or_create(name: "bob", 
+                        last_name: "marley",
+                        address: "jamaika",
+                        balance: 1000,
+                        password: 'password')
 
 class App < Sinatra::Base
+  def error(msg)
+    message(:error, msg)
+  end
+
+  def info(msg)
+    message(:info, msg)
+  end
+
+  def message(key, msg)
+    { key => msg }.to_json
+  end
+
+  def payload
+    @payload ||= JSON.parse(request.body.read)
+    puts @payload
+    @payload
+  end
 
   get '/' do
     content_type :json
@@ -55,41 +76,46 @@ class App < Sinatra::Base
   end
 
   post '/customer/:sender/transaction/:receiver' do |sender, receiver|
+    protected!
     content_type :json
-    sender = Customer.find(name: sender)
     receiver = Customer.find(name: receiver)
-    halt 404, error("sender not found") if sender.nil?
+    halt 404, error("sender not found") if customer.nil?
+    halt 404, error('You cannot use another bankaccount') if auth.credentials.first != sender
     halt 404, error("receiver not found") if receiver.nil?
-    amount = payload['amount'].to_i
-    if(sender.balance >= amount)
-      sender.update(balance: sender.balance - amount)
-      receiver.update(balance: receiver.balance + amount)
+    if customer.transaction(receiver, payload['amount'].to_i)
       info('transaction processed')
       status 200
     else
       status 422
       error("Not enough balance")
     end
-  rescue
+  rescue => err
+    puts err.message
     status 400
+    error(err.message)
   end
 
-  def error(msg)
-    message(:error, msg)
+  def authorized?
+    customer = customer(auth.credentials.first) rescue nil
+    auth.provided? &&
+      auth.basic? &&
+      auth.credentials &&
+      customer &&
+      auth.credentials.last == customer.password
   end
 
-  def info(msg)
-    message(:info, msg)
+  def customer(name = nil)
+    @customer ||= Customer.find(name: name)
   end
 
-  def message(key, msg)
-    { key => msg }.to_json
+  def auth
+    @auth ||=  Rack::Auth::Basic::Request.new(request.env)
   end
 
-  def payload
-    @payload ||= JSON.parse(request.body.read)
-    puts @payload
-    @payload
+  def protected!
+    unless authorized?
+      response['WWW-Authenticate'] = %(Basic realm="Restricted Area")
+      throw(:halt, [401, "Oops... we need your login name & password\n"])
+    end
   end
 end
-

@@ -1,4 +1,8 @@
 class Customer < Sequel::Model
+  def transaction(receiver, amount)
+    update(balance: balance - amount) && receiver.update(balance: receiver.balance + amount)
+  end
+
   def to_h
     {
       name: name,

@@ -8,6 +8,7 @@ migration "create the foos table" do
     text        :name
     text        :last_name
     text        :address
+    text        :password
     integer     :balance, default: 0
 
     index :name, unique: true
